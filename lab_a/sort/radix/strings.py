@@ -1,0 +1,1 @@
+def strings(arr): pass

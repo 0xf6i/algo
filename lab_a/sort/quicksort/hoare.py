@@ -1,0 +1,1 @@
+def hoare(arr): pass

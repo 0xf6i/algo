@@ -1,0 +1,1 @@
+def counting(arr): pass

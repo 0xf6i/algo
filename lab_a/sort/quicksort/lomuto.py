@@ -1,0 +1,1 @@
+def lomuto(arr): pass
