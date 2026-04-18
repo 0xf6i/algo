@@ -1,1 +1,2 @@
-def insertion_binary(arr): pass
+def insertion_binary(arr):
+    pass

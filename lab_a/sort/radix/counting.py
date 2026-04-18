@@ -1,1 +1,2 @@
-def counting(arr): pass
+def counting(arr):
+    pass

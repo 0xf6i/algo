@@ -1,1 +1,2 @@
-def median(arr): pass
+def median(arr):
+    pass

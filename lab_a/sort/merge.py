@@ -1,22 +1,22 @@
-
-def _merge(left, right):
-    result = []
-    i = j = 0
-    while i < len(left) and j < len(right):
-        if left[i] <= right[j]:
-            result.append(left[i])
-            i += 1
-        else:
-            result.append(right[j])
-            j += 1
-    result.extend(left[i:])
-    result.extend(right[j:])
-    return result
-
-def merge(arr):
+def mergesort(arr):
     if len(arr) <= 1:
         return arr
     mid = len(arr) // 2
-    left = merge(arr[:mid])
-    right = merge(arr[mid:])
-    return _merge(left, right)
+    left = mergesort(arr[:mid])
+    right = mergesort(arr[mid:])
+    return merge(left, right)
+
+
+def merge(l, r):
+    result = []
+    i = j = 0
+
+    while i < len(l) and j < len(r):
+        if l[i] <= r[j]:
+            result.append(l[i])
+            i += 1
+        else:
+            result.append(r[j])
+            j += 1
+    result += l[i:] + r[j:]
+    return result

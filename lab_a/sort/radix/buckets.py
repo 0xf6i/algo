@@ -1,1 +1,2 @@
-def buckets(arr): pass
+def buckets(arr):
+    pass

@@ -37,6 +37,7 @@ def clear():
 
 # --- Discovery ---
 
+
 def _load_module(path: Path):
     name = path.stem
     spec = importlib.util.spec_from_file_location(name, path)
@@ -60,8 +61,11 @@ def _find_main_func(mod):
 
 def _func_is_stub(func):
     src = inspect.getsource(func)
-    lines = [l.strip() for l in src.splitlines()
-             if l.strip() and not l.strip().startswith(("def ", "#"))]
+    lines = [
+        l.strip()
+        for l in src.splitlines()
+        if l.strip() and not l.strip().startswith(("def ", "#"))
+    ]
     return lines == ["pass"] or not lines
 
 
@@ -139,9 +143,9 @@ def discover_algorithms():
 
 # --- Tracing engine ---
 
+
 def _is_num_list(v):
-    return (isinstance(v, list) and v
-            and all(isinstance(x, (int, float)) for x in v))
+    return isinstance(v, list) and v and all(isinstance(x, (int, float)) for x in v)
 
 
 def _get_all_module_codes(func):
@@ -191,7 +195,7 @@ def trace_sort(func, caller, arr):
         m = len(sub_vals)
         sub_sorted = sorted(sub_vals)
         for start in range(n - m + 1):
-            if sorted(canvas[start:start + m]) == sub_sorted:
+            if sorted(canvas[start : start + m]) == sub_sorted:
                 return start
         return None
 
@@ -257,6 +261,7 @@ def trace_sort(func, caller, arr):
         _record(frame, None)
         return tracer
 
+    main_code = func.__code__
     prev_lineno = [None]
     prev_locals = [None]
 
@@ -285,10 +290,20 @@ def trace_sort(func, caller, arr):
             elif _is_num_list(v) and len(v) < n:
                 interesting[k] = v
 
+        # For helper functions (not the main algo), only record when array changed
+        in_main = frame.f_code is main_code
+        if not in_main and not changed:
+            return
+
         # Skip if nothing visibly changed (same line, same vars, same array)
-        if (lineno == prev_lineno[0]
-                and interesting == prev_locals[0]
-                and not changed):
+        if lineno == prev_lineno[0] and interesting == prev_locals[0] and not changed:
+            return
+
+        # Skip if only the line changed but vars and array are identical
+        # (e.g. loop header re-evaluation with no state change)
+        if not changed and interesting == prev_locals[0] and lineno != prev_lineno[0]:
+            # Still update lineno so the next real change is recorded
+            prev_lineno[0] = lineno
             return
 
         prev_lineno[0] = lineno
@@ -359,6 +374,7 @@ def trace_search(func, caller, arr, target):
 
 # --- Rendering ---
 
+
 def colored_bar(value, max_val, color=CYAN, width=50):
     bar_len = int((value / max_val) * width) if max_val else 0
     return f"{color}{BAR_CHAR * bar_len}{RESET}"
@@ -379,7 +395,9 @@ def _render_source_with_vars(source_lines, lineno, locals_info):
             # Show variable values inline next to the current line
             if locals_info:
                 var_str = "  ".join(f"{k}={v}" for k, v in locals_info.items())
-                lines.append(f"  {YELLOW}{BOLD} > {padded}{RESET}  {MAGENTA}{var_str}{RESET}")
+                lines.append(
+                    f"  {YELLOW}{BOLD} > {padded}{RESET}  {MAGENTA}{var_str}{RESET}"
+                )
             else:
                 lines.append(f"  {YELLOW}{BOLD} > {sl}{RESET}")
         else:
@@ -396,8 +414,9 @@ def _render_source_with_vars(source_lines, lineno, locals_info):
     return lines
 
 
-def render_sort_frame(arr, max_val, changed, label, src_line, lineno,
-                      source_lines, locals_info):
+def render_sort_frame(
+    arr, max_val, changed, label, src_line, lineno, source_lines, locals_info
+):
     lines = []
     lines.append(f"\n  {BOLD}{CYAN}{label}{RESET}")
     lines.append("")
@@ -417,10 +436,11 @@ def render_sort_frame(arr, max_val, changed, label, src_line, lineno,
     return "\n".join(lines)
 
 
-def render_search_frame(arr, target, pointers, label, src_line, lineno,
-                        source_lines):
+def render_search_frame(arr, target, pointers, label, src_line, lineno, source_lines):
     lines = []
-    lines.append(f"\n  {BOLD}{CYAN}{label}{RESET}    target = {YELLOW}{BOLD}{target}{RESET}")
+    lines.append(
+        f"\n  {BOLD}{CYAN}{label}{RESET}    target = {YELLOW}{BOLD}{target}{RESET}"
+    )
     lines.append("")
 
     # Source with inline vars — pointers are the interesting variables here
@@ -465,6 +485,7 @@ def render_search_frame(arr, target, pointers, label, src_line, lineno,
 
 
 # --- Interactive runner ---
+
 
 def get_speed():
     print(f"\n  {BOLD}Speed:{RESET}")
@@ -532,8 +553,11 @@ def run_sort(label, func, caller):
 
     for snap, changed, lineno, src, locals_info in frames:
         clear()
-        print(render_sort_frame(snap, max_val, changed, label, src, lineno,
-                                source_lines, locals_info))
+        print(
+            render_sort_frame(
+                snap, max_val, changed, label, src, lineno, source_lines, locals_info
+            )
+        )
         if speed is None:
             input(f"  {DIM}[Enter] next step > {RESET}")
         else:
@@ -542,8 +566,11 @@ def run_sort(label, func, caller):
     # Final frame
     clear()
     final = frames[-1][0]
-    print(render_sort_frame(final, max_val, set(range(len(final))), label,
-                            "done", -1, source_lines, {}))
+    print(
+        render_sort_frame(
+            final, max_val, set(range(len(final))), label, "done", -1, source_lines, {}
+        )
+    )
     print(f"  {GREEN}{BOLD}Sorted!{RESET}")
     input(f"\n  {DIM}Press Enter to return to menu...{RESET}")
 
@@ -562,8 +589,9 @@ def run_search(label, func, caller):
 
     for pointers, lineno, src in frames:
         clear()
-        print(render_search_frame(arr, target, pointers, label, src, lineno,
-                                  source_lines))
+        print(
+            render_search_frame(arr, target, pointers, label, src, lineno, source_lines)
+        )
         if speed is None:
             input(f"  {DIM}[Enter] next step > {RESET}")
         else:
@@ -572,8 +600,7 @@ def run_search(label, func, caller):
     # Result
     clear()
     last_ptrs = frames[-1][0]
-    print(render_search_frame(arr, target, last_ptrs, label, "", -1,
-                              source_lines))
+    print(render_search_frame(arr, target, last_ptrs, label, "", -1, source_lines))
     if result is not None and result >= 0:
         print(f"  {GREEN}{BOLD}Found {target} at index {result}{RESET}")
     else:

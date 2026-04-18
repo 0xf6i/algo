@@ -1,1 +1,2 @@
-def hoare_last(arr): pass
+def hoare_last(arr):
+    pass
